@@ -34,6 +34,15 @@
                 </div>
             </div>
 
+            <div class="clearfix"></div>
+
+            <div class="alert alert-info alert-dismissible" role="alert" ng-show="!loading && success">
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                Note: Currently this app only shows <strong>Apex Class</strong> dependencies. It does not show code used within VisualForce pages, components, or Lightning Components.
+            </div>
+
             <table class="table table-hover" ng-show="success">
                 <tbody>
                     <tr ng-repeat-start="class in classes" data-toggle="collapse" data-target="#{{ class.Id }}" class="clickable" ng-click="toggleIcons('#'+class.Id)">
