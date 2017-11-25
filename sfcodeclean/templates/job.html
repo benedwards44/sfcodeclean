@@ -17,8 +17,21 @@
 
             {% verbatim %}
 
-            <div class="alert alert-danger" role="alert" ng-show="!success">
-                {{ error }}
+            <div class="col-md-6 col-md-offset-3" ng-show="loading">
+                <div class="pull-left">
+                    <img src="/static/images/loading.gif" alt="Loading" title="Loading" />
+                </div>
+                <div class="pull-right" style="float:left;margin-left:20px;">
+                    <h1 style="font-size:1.5em;margin-top:20px;">Loading...</h1>
+                    <p>Building your code scan results...</p>
+                </div>
+                <div class="clearfix"></div>
+            </div>
+
+            <div ng-show="!success">
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
             </div>
 
             <table class="table table-hover" ng-show="success">

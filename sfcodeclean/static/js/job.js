@@ -12,8 +12,9 @@ codeResultsApp.controller("CodeResultsController", function($scope, $http, $q) {
         // Job ID passed through from view
         $scope.slug = slug;
         $scope.classes = [];
-        $scope.success = false;
+        $scope.success = true;
         $scope.error = null;
+        $scope.loading = true;
 
         $scope.loadClasses(slug);
     };
@@ -32,6 +33,7 @@ codeResultsApp.controller("CodeResultsController", function($scope, $http, $q) {
 
             $scope.classes = response.data;
             $scope.success = true;
+            $scope.loading = false;
 
             console.log($scope.classes);
         }, 
@@ -39,6 +41,7 @@ codeResultsApp.controller("CodeResultsController", function($scope, $http, $q) {
 
             $scope.success = false;
             $scope.error = response;
+            $scope.loading = false;
         });
     };
 
