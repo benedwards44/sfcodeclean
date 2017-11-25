@@ -1,0 +1,52 @@
+body {
+    font-family: "HelveticaNeueW02-45Ligh", "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Nimbus Sans L", sans-serif;
+    color: #999a9b;
+}
+
+
+h1 {
+    font-family: "HelveticaNeueW02-Thin", "HelveticaNeueW02-45Ligh", "HelveticaNeue-Light", "Helvetica Neue Light", "HelveticaNeueW02-45Ligh", "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Nimbus Sans L", sans-serif;
+    font-size: 2em;
+    color: #ff6600;
+}
+h2 {
+    font-family: "HelveticaNeueW02-Thin", "HelveticaNeueW02-45Ligh", "HelveticaNeue-Light", "Helvetica Neue Light", "HelveticaNeueW02-45Ligh", "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Nimbus Sans L", sans-serif;
+    font-size: 1.5em;
+    color: #ff6600;
+}
+h3 {
+    color: #ff6600;
+}
+h4 {
+    color: #ff6600;
+}
+
+.orange {
+    color: #ff6600;
+}
+
+.btn-primary {
+    cursor: pointer;
+    -webkit-appearance: none!important;
+    -moz-appearance: none!important;
+    appearance: none!important;
+    border: none;
+    font-family: "HelveticaNeueW02-45Ligh", "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Nimbus Sans L", sans-serif;
+    text-transform: uppercase;
+    color: white;
+    text-decoration: none;
+    background-color: rgba(255, 102, 0, 0.9);
+    transition: background-color 0.3s;
+    -moz-transition: background-color 0.3s;
+    -webkit-transition: background-color 0.3s;
+    -o-transition: background-color 0.3s;
+    padding: 0.5em 1em;
+}
+
+.clickable {
+    cursor:pointer;
+}
+
+.padding-left-20 {
+    padding-left:20px !important;
+}

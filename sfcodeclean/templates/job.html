@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% load staticfiles %}
+
+{% block content %}
+
+    <h1 class="pull-left">Scan Results</h1>
+    <h2 class="pull-right">{{ job.username }} <small>{{ job.org_id }}</small></h2>
+
+    <div class="clearfix"></div>
+
+    <hr/>
+
+    <div ng-app="codeResultsApp">
+
+        <div ng-controller="CodeResultsController" ng-init="init('{{ job.slug }}')">
+
+            {% verbatim %}
+
+            <div class="alert alert-danger" role="alert" ng-show="!success">
+                {{ error }}
+            </div>
+
+            <table class="table table-hover" ng-show="success">
+                <tbody>
+                    <tr ng-repeat-start="class in classes" data-toggle="collapse" data-target="#{{ class.Id }}" class="clickable" ng-click="toggleIcons('#'+class.Id)">
+                        <td>
+                            <i class="fa fa-plus" aria-hidden="true"></i>&nbsp;&nbsp;
+                            {{ class.Name }}
+                        </td>
+                    </tr>
+                    <tr ng-repeat-end id="{{ class.Id }}" class="collapse">
+                        <td>
+                            <table class="table">
+                                <tbody>
+                                    <tr data-toggle="collapse" data-target=".{{ class.Id }}-references" class="clickable" ng-click="toggleIcons('.'+class.Id+'-references')">
+                                        <td>
+                                            <i class="fa fa-plus" aria-hidden="true"></i>
+                                            &nbsp;&nbsp;External References
+                                        </td>
+                                    </tr>
+                                    <tr ng-repeat="reference in class.SymbolTable.externalReferences" class="{{ class.Id }}-references collapse">
+                                        <td class="padding-left-20">{{ reference.name }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            {% endverbatim %}
+
+        </div>
+
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+
+    <!-- Angular scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.6/angular.min.js"></script>   
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.6/angular-route.min.js"></script> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.6/angular-resource.min.js"></script>
+
+    <!-- Angular controller -->
+    <script src="{% static 'js/job.js' %}"></script>
+    
+{% endblock %}

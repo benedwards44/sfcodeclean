@@ -1,0 +1,36 @@
+{% extends 'base.html' %}environment
+
+{% load staticfiles %}
+{% load widget_tweaks %}
+
+{% block content %}
+
+    {% include 'snippets/intro.html' %}
+
+    {% if form.errors %}
+        <div class="alert alert-danger" role="alert">
+            {{ form.non_field_errors }}
+            {{ form.environment.errors }}
+        </div>
+    {% endif %}
+
+    <form action="." method="post">
+
+        {% csrf_token %}
+
+        <div class="col-md-6">
+            {% include 'snippets/input_field.html' with field=form.environment %}
+        </div>
+
+        <div class="col-md-6">
+            <div class="form-group" style="padding-top:25px;">
+                <input type="submit" value="Login" class="btn btn-primary" />
+            </div>
+
+        </div>
+
+    </form>
+
+    <div class="clearfix"></div>
+
+{% endblock %}

@@ -1,0 +1,31 @@
+{% load widget_tweaks %}
+
+<div class="form-group {% if size %}form-group-{{ size }}{% endif %} {% if icon %}form-group-icon-left{% endif %} {% if field.errors %}has-error{% endif %}">
+
+	{% if icon %}
+		<i class="fa {{ icon }} input-icon input-icon-hightlight"></i>
+	{% endif %}
+
+	<label for="{{ field.auto_id }}">{% if label %}{{ label }}{% else %}{{ field.label }}{% endif %}</label>
+
+	{% if required %}
+		{% render_field field class="form-control" placeholder=placeholder required='required' step=step %}
+	{% else %}
+		{% render_field field class="form-control" placeholder=placeholder step=step %}
+	{% endif %}
+
+	{% if helptext %}
+		<span class="help-block">{{ helptext }}</span>
+	{% endif %}
+
+	{% if field.errors %}
+		<span class="help-block">
+			{% if field.errors|length == 1 %}
+				{{ field.errors.0 }}
+			{% else %}
+				{{ field.errors }}
+			{% endif %}
+		</span>
+	{% endif %}
+
+</div>

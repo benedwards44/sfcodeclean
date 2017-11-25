@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% load widget_tweaks %}
+
+{% block content %}
+
+    {% include 'snippets/intro.html' %}
+
+    <div class="col-md-8 col-md-offset-2">
+                    
+        {% if form.error.value %}
+            <div class="alert alert-danger" role="alert">
+                Oops, looks like there was an error logging in:<br/>
+                <strong>{{ form.error.value }}</strong>
+                <br/><br/>
+                <a class="btn btn-primary" href="/">Try Again</a>
+            </div>
+        {% else %}
+
+            {% if form.errors %}
+                <div class="alert alert-danger" role="alert">
+                    There were errors submitting your job:
+                    <ul>
+                        {% for error in form.non_field_errors %}<li>{{ error|escape }}</li>{% endfor %}
+                        {% for error in form.access_token.errors %}<li><strong>Access Token:</strong> {{ error|escape }}</li>{% endfor %}
+                        {% for error in form.org_id.errors %}<li><strong>Org ID:</strong> {{ error|escape }}</li>{% endfor %}
+                        {% for error in form.instance_url.errors %}<li><strong>Instance URL:</strong> {{ error|escape }}</li>{% endfor %}
+                        {% for error in form.username.errors %}<li><strong>Username:</strong> {{ error|escape }}</li>{% endfor %}
+                        {% for error in form.email.errors %}<li><strong>Email:</strong> {{ error|escape }}</li>{% endfor %}
+                        {% for error in form.email_result.errors %}<li><strong>Email Result:</strong> {{ error|escape }}</li>{% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <form action="." method="post">
+
+                {% csrf_token %}
+
+                <p class="lead">
+                    Successfully logged in as <strong>{{ form.username.value }}</strong><br/> 
+                    Org ID: <strong>{{ form.org_id.value }}</strong>.
+                </p>
+
+                <div class="checkbox">
+                    <label>
+                        {{ form.email_result }} Email me the results
+                    </label>
+                </div>
+
+                <div class="form-group" id="email-form">
+                    {% render_field form.email class="form-control" placeholder="Enter your email address..." %}
+                </div>
+
+                {{ form.org_id.as_hidden }}
+                {{ form.access_token.as_hidden }}
+                {{ form.instance_url.as_hidden }}
+                {{ form.username.as_hidden }}
+
+                <hr />
+
+                <a class="btn btn-primary btn-lg pull-left" href="{% url 'logout' %}?instance_url={{ form.instance_url.value }}">
+                    Logout
+                    <i class="fa fa-sign-out" aria-hidden="true"></i>
+                </a> 
+                <button type="submit" class="btn btn-primary btn-lg pull-right">
+                    Scan Code
+                    <i class="fa fa-wrench" aria-hidden="true"></i>
+                </button> 
+
+            </form>
+
+            <div class="clearfix"></div>
+
+            <br/><br/>
+
+        {% endif %}
+
+    </div>
+
+    <div class="clearfix"></div>
+
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        $(document).ready(function() {
+
+            $('#id_email_result').change(function () {
+
+                if ($(this).prop('checked')) {
+
+                    $('#email-form').show('slow');
+                }
+                else {
+
+                    $('#email-form').hide('slow');
+                }
+            });
+
+        });
+    </script>
+{% endblock %}
