@@ -50,6 +50,11 @@
                             <i class="fa fa-plus" aria-hidden="true"></i>&nbsp;&nbsp;
                             {{ class.Name }}
                         </td>
+                        <td class="text-right">
+                            <button class="btn btn-primary btn-sm" ng-click="openModal(class.Name, class.AppId)">
+                                View Class
+                            </button>
+                        </td>
                     </tr>
                     <tr ng-repeat-end id="{{ class.Id }}" class="collapse">
                         <td>
@@ -77,9 +82,31 @@
 
     </div>
 
+    <!-- Modal -->
+    <div class="modal fade" id="viewCodeModal" tabindex="-1" role="dialog" aria-labelledby="viewCodeModalLabel">
+        <div class="modal-dialog modal-lg" role="document" style="width: 1100px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="viewCodeModalLabel"></h4>
+                </div>
+                <div class="modal-body" id="viewCodeBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 {% endblock %}
 
 {% block scripts %}
+
+    <script src="{% static 'js/jquery-migrate-1.1.0.min.js' %}"></script>
+    <script src="{% static 'js/jquery.syntaxhighlighter.min.js' %}"></script>   
+    <script>
+        $.SyntaxHighlighter.init();
+    </script>
 
     <!-- Angular scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.6/angular.min.js"></script>   

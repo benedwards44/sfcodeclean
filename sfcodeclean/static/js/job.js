@@ -58,4 +58,35 @@ codeResultsApp.controller("CodeResultsController", function($scope, $http, $q) {
         }
     };
 
+    $scope.openModal = function(class_name, class_id) {
+
+        // Set the class name
+        $('#viewCodeModalLabel').text(class_name);
+
+        // Show the loading gif
+        $('#viewCodeBody').html('<div class="text-center"><img src="/static/images/loading.gif" alt="Loading" /></div>');
+
+        // Launch the modal
+        $('#viewCodeModal').modal('show');
+
+        $http({
+            method: 'GET',
+            url: '/apexclass/' + class_id + '/'
+        })
+        .then(function successCallback(response) {
+
+            // Insert the content and init the syntax highlighter
+            var $content = $('<pre class="highlight">' + response.data + '</pre>');
+            $content.syntaxHighlight();
+            $('#viewCodeBody').html($content);
+            $.SyntaxHighlighter.init();
+        }, 
+        function errorCallback(response) {
+
+            $('#viewCodeBody').html(
+                '<div class="alert alert-danger" role="alert">Error loading Apex Class: ' + response + '</div>'
+            );
+        });
+    };
+
 });

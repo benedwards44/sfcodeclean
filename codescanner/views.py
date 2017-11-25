@@ -208,9 +208,22 @@ class JobJsonView(View):
 
         for apex_class in job.classes():
             response.append({
+                'AppId': apex_class.id,
                 'Id': apex_class.class_id,
                 'Name': apex_class.name,
                 'SymbolTable': json.loads(apex_class.symbol_table_json)
             }) 
 
         return JsonResponse(response, safe=False)
+
+
+class ApexClassBodyView(DetailView):
+    """
+    Retrieve the ApexClass body
+    """
+    model = models.ApexClass
+
+    def get(self, request, *args, **kwargs):
+        return HttpResponse(self.get_object().body)
+
+

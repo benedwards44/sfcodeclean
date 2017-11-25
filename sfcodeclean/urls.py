@@ -30,4 +30,6 @@ urlpatterns = [
     url(r'^job/status/(?P<slug>[-\w]+)/$', views.JobStatusView.as_view(), name='job-status'),
     url(r'^job/json/(?P<slug>[-\w]+)/$', views.JobJsonView.as_view(), name='job-json'),
     url(r'^job/(?P<slug>[-\w]+)/$', views.JobView.as_view(), name='job'),
+
+    url(r'^apexclass/(?P<pk>\d+)/$', views.ApexClassBodyView.as_view(), name='apex-class-body'),
 ]
