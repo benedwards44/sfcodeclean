@@ -23,7 +23,7 @@ PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 ON_HEROKU = 'ON_HEROKU' in os.environ
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY')
+SECRET_KEY = os.environ.get('SECRET_KEY', 'xxx')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True

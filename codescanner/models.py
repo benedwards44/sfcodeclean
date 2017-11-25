@@ -69,22 +69,3 @@ class ApexClass(models.Model):
     def __unicode__(self):
         return self.name
 
-
-class ApexClassElement(models.Model):
-    """
-    Holds details about the elements within an Apex Class. Includes things like properties, methods and variables
-    """
-
-    apex_class = models.ForeignKey(ApexClass)
-
-    TYPE_CHOICES = (
-        ('Method', 'Method'),
-        ('Property', 'Property'),
-        ('Variable', 'Variable'),
-    )
-
-    type = models.CharField(max_length=20, choices=TYPE_CHOICES)
-    name = models.CharField(max_length=80)
-
-    def __unicode__(self):
-        return self.name
