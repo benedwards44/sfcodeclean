@@ -76,8 +76,6 @@ codeResultsApp.controller("CodeResultsController", function($scope, $http, $q) {
                 }
             });
 
-            console.log(classesReferencedBy);
-
             // Clear the data
             $scope.root.children.length = 0;
 
