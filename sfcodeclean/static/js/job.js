@@ -86,8 +86,8 @@ codeResultsApp.controller("CodeResultsController", function($scope, $http, $q) {
                 $scope.root.children.push({
                     name: apexClass.Name,
                     IsReferenced: (apexClass.Name in classesReferencedBy),
-                    Id: apexClass.Id,
-                    AppId: apexClass.AppId,
+                    Id: apexClass.ApexClassId,
+                    DatabaseId: apexClass.DatabaseId,
                     TopLevel: true,
                     children: [
                         {

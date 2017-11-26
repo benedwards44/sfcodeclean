@@ -37,6 +37,18 @@ def get_user(instance_url, access_token, user_id):
 
     return result.json()
 
+def get_user(instance_url, access_token):
+    """
+    Get the Salesforce user details without knowing the user id
+    """
+    # Build the URL
+    url = '%s%schatter/users/me' % (instance_url, settings.SALESFORCE_REST_URL)
+
+    # Query for the user record
+    result = requests.get(url, headers=get_headers(access_token))
+    
+    return result.json()
+
 
 def send_finished_email(job):
     """

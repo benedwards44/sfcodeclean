@@ -9,6 +9,8 @@ from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.conf import settings
 from django.views import View
 from django.urls import reverse
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 
 from . import models
 from . import forms
@@ -18,8 +20,7 @@ from .tasks import scan_code
 import requests
 import urllib
 import json
-
-
+import traceback
 
 class IndexView(FormView):
     """
@@ -165,6 +166,8 @@ class JobStatusView(View):
 
         return JsonResponse({
             'status': job.status,
+            'done': job.status in ['Finished', 'Error'],
+            'success': job.status == 'Finished',
             'error': job.error
         })
 
@@ -208,8 +211,8 @@ class JobJsonView(View):
 
         for apex_class in job.classes():
             response.append({
-                'AppId': apex_class.id,
-                'Id': apex_class.class_id,
+                'DatabaseId': apex_class.id,
+                'ApexClassId': apex_class.class_id,
                 'Name': apex_class.name,
                 'SymbolTable': json.loads(apex_class.symbol_table_json)
             }) 
@@ -225,5 +228,108 @@ class ApexClassBodyView(DetailView):
 
     def get(self, request, *args, **kwargs):
         return HttpResponse(self.get_object().body)
+
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ApiJobCreateView(View):
+    """
+    Start a job via API
+    """
+
+    def get(self, request, *args, **kwargs):
+        return HttpResponse('GET method not supported', status=405) 
+
+
+    def post(self, request, *args, **kwargs):
+        """
+        Receive the POST parameters
+        """
+        try:
+
+            # Load the Json request
+            json_body = json.loads(request.body)
+
+            instance_url = json_body.get('instanceUrl')
+            access_token = json_body.get('accessToken')
+
+            if not instance_url:
+                return JsonResponse(
+                    {
+                        'success': False,
+                        'error': 'instanceUrl is required. Please send the instanceUrl for your Salesforce Org. Eg. https://ap2.salesforce.com or https://mydomain.my.salesforce.com'
+                    },
+                    status=400
+                )
+
+            if not access_token:
+                return JsonResponse(
+                    {
+                        'success': False,
+                        'error': 'accessToken is required. Please pass through a valid Salesforce access token (or Session Id)'
+                    },
+                    status=400
+                )
+                
+            # If we have an instance_url and access token, we can start the job
+            # Attempt login with the details provided
+            try:
+
+                user = utils.get_user(instance_url, access_token)
+
+                print user
+
+                # If response is a list, there's an error
+                # Not a great approahc, but the API returns a list when an error and a single object whe not
+                if type(user) is list:
+                    user_response = user[0]        
+                    return JsonResponse(
+                        {
+                            'success': False,
+                            'error': '%s: %s' % (user_response.get('errorCode'), user_response.get('message'))
+                        },
+                        status=401
+                    )
+
+                # We've logged in, create the job
+                job = models.Job()
+                job.username = user.get('username')
+                job.email = user.get('email')
+                job.email_result = False
+                job.access_token = access_token
+                job.instance_url = instance_url
+                job.save()
+
+                # Start the job to scan the job
+                scan_code.delay(job.id)
+
+                return JsonResponse(
+                    {
+                        'success': True,
+                        'id': job.slug
+                    },
+                    status=200
+                )
+
+
+            except Exception as ex:
+                return JsonResponse(
+                    {
+                        'success': False,
+                        'error': 'Error logging into Salesforce: ' + str(ex)
+                    },
+                    status=401
+                )
+
+            return JsonResponse({'Hey':'There'})
+
+        except Exception as ex:
+            return JsonResponse(
+                {
+                    'success': False,
+                    'error': str(ex)
+                },
+                status=500
+            )
 
 
