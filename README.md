@@ -13,16 +13,16 @@ Endpoint: `https://sfcodeclean.herokuapp.com/api/job/`
 Data:
 ```
 {
-	"accessToken": "VALID_SALESFORCE_ACCESS_TOKEN",
-	"instanceUrl": "SALESFORCE_ORG_URL"
+    "accessToken": "VALID_SALESFORCE_ACCESS_TOKEN",
+    "instanceUrl": "SALESFORCE_ORG_URL"
 }
 ```
 
 You will then receive an ID for the job. You use this ID to check the status of your job, and ultimately retrieve the results.
 ```
 {
-	"id": "6210f461-0a4b-437d-be39-f885d6f3e543",
-	"success": true
+    "id": "6210f461-0a4b-437d-be39-f885d6f3e543",
+    "success": true
 }
 ```
 
@@ -34,10 +34,10 @@ Endpoint: https://sfcodeclean.herokuapp.com/api/job/status/JOB_ID (eg. https://s
 Response:
 ```
 {
-	"status": "Processing",
-	"done": false,
-	"success": false,
-	"error": null
+    "status": "Processing",
+    "done": false,
+    "success": false,
+    "error": null
 }
 ```
 
@@ -52,13 +52,13 @@ Endpoint: https://sfcodeclean.herokuapp.com/api/job/JOB_ID (eg. https://sfcodecl
 Response:
 ```
 [
-	{
-		"DatabaseId": 123 // The app database Id of the class. Not really relevant for the API
-		"ApexClassId" "01pb0000004oZiU" // The Salesforce Apex Class Id
-		"Name": "AccountController" // The Salesforce name of the class
-		"SymbolTable": {
-			// The full SymbolTable for the class
-		}
-	}
+    {
+        "DatabaseId": 123 // The app database Id of the class. Not really relevant for the API
+        "ApexClassId" "01pb0000004oZiU" // The Salesforce Apex Class Id
+        "Name": "AccountController" // The Salesforce name of the class
+        "SymbolTable": {
+            // The full SymbolTable for the class
+        }
+    }
 ]
 ```

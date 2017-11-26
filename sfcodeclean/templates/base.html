@@ -49,6 +49,12 @@
                                 Apex Code Scanner
                             </a>
                         </li>
+                        <li>
+                            <button class="btn btn-default" data-toggle="modal" data-target="#apiModal" style="margin-left:20px;margin-top:8px;">
+                                <i class="fa fa-cogs" aria-hidden="true"></i>
+                                API
+                            </button>
+                        </li>
                     </ul>
 
                     <ul class="nav navbar-nav navbar-right">
@@ -97,6 +103,71 @@
                             If you haven't already, check out my other apps at the Salesforce Toolkit Page:<br/>
                             <a href="https://sftoolkit.co/" target="_blank">https://sftoolkit.co/</a>
                         </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="apiModal" tabindex="-1" role="dialog" aria-labelledby="apiModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span aria-hidden="true">&times;</span>
+                            <span class="sr-only">Close</span>
+                        </button>
+                        <h3 class="modal-title" id="apiModalLabel">
+                            API Details
+                        </h3>
+                    </div>
+                    <div class="modal-body">
+                        <h4>Step 1 - Start Job</h4>
+                        Send a POST request to start your job. <br/>
+                        <strong>Endpoint:</strong> <pre>https://sfcodeclean.herokuapp.com/api/job/</pre>
+                        <strong>Payload</strong>:
+<pre>{
+    "accessToken": "VALID_SALESFORCE_ACCESS_TOKEN",
+    "instanceUrl": "SALESFORCE_ORG_URL"
+}</pre>
+
+                        You will then receive an ID for the job. You use this ID to check the status of your job, and ultimately retrieve the results.
+<pre>{
+    "id": "6210f461-0a4b-437d-be39-f885d6f3e543",
+    "success": true
+}</pre>
+
+                        <br/>
+                        <h4>Step 2 - Check Progress</h4>
+                        The API runs asynchronously, as jobs can take some time to run depending on the size of your code base. You need to check the status of the job, and when complete you can get your results. Send a GET request to: <br/>
+                        <strong>Endpoint:</strong> <pre>https://sfcodeclean.herokuapp.com/api/job/status/JOB_ID (eg. https://sfcodeclean.herokuapp.com/api/job/status/6210f461-0a4b-437d-be39-f885d6f3e543)</pre>
+                        <strong>Response:</strong>
+<pre>{
+    "status": "Processing",
+    "done": false,
+    "success": false,
+    "error": null
+}</pre>
+                        The done and success variables will help you determine when your job is complete, and if it's successful.
+
+                        <br/>
+                        <h4>Step 3 - Get Results</h4>
+                        And finally, you can get your results. Send a GET request to: <br/>
+                        <strong>Endpoint:</strong> <pre>https://sfcodeclean.herokuapp.com/api/job/JOB_ID (eg. https://sfcodeclean.herokuapp.com/api/job/6210f461-0a4b-437d-be39-f885d6f3e543)</pre>
+                        <strong>Response:</strong>
+<pre>[
+    {
+        "DatabaseId": 123 // The app database Id of the class. Not really relevant for the API
+        "ApexClassId" "01pb0000004oZiU" // The Salesforce Apex Class Id
+        "Name": "AccountController" // The Salesforce name of the class
+        "SymbolTable": {
+            // The full SymbolTable for the class
+        }
+    },
+]</pre>
+
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
