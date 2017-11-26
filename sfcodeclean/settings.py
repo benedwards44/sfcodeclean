@@ -26,7 +26,8 @@ ON_HEROKU = 'ON_HEROKU' in os.environ
 SECRET_KEY = os.environ.get('SECRET_KEY', 'xxx')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = not ON_HEROKU or 'DEBUG' in os.environ
+#DEBUG = not ON_HEROKU or 'DEBUG' in os.environ
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
