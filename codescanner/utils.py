@@ -37,7 +37,7 @@ def get_user(instance_url, access_token, user_id):
 
     return result.json()
 
-def get_user(instance_url, access_token):
+def get_user_with_no_id(instance_url, access_token):
     """
     Get the Salesforce user details without knowing the user id
     """

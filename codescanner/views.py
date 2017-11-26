@@ -275,7 +275,7 @@ class ApiJobCreateView(View):
             # Attempt login with the details provided
             try:
 
-                user = utils.get_user(instance_url, access_token)
+                user = utils.get_user_with_no_id(instance_url, access_token)
 
                 print user
 
