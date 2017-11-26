@@ -43,38 +43,25 @@
                 Note: Currently this app only shows <strong>Apex Class</strong> dependencies. It does not show code used within VisualForce pages, components, or Lightning Components.
             </div>
 
-            <table class="table table-hover" ng-show="success">
-                <tbody>
-                    <tr ng-repeat-start="class in classes" data-toggle="collapse" data-target="#{{ class.Id }}" class="clickable" ng-click="toggleIcons('#'+class.Id)">
-                        <td>
-                            <i class="fa fa-plus" aria-hidden="true"></i>&nbsp;&nbsp;
-                            {{ class.Name }}
-                        </td>
-                        <td class="text-right">
-                            <button class="btn btn-primary btn-sm" ng-click="openModal(class.Name, class.AppId)">
-                                View Class
-                            </button>
-                        </td>
-                    </tr>
-                    <tr ng-repeat-end id="{{ class.Id }}" class="collapse">
-                        <td>
-                            <table class="table">
-                                <tbody>
-                                    <tr data-toggle="collapse" data-target=".{{ class.Id }}-references" class="clickable" ng-click="toggleIcons('.'+class.Id+'-references')">
-                                        <td>
-                                            <i class="fa fa-plus" aria-hidden="true"></i>
-                                            &nbsp;&nbsp;External References
-                                        </td>
-                                    </tr>
-                                    <tr ng-repeat="reference in class.SymbolTable.externalReferences" class="{{ class.Id }}-references collapse">
-                                        <td class="padding-left-20">{{ reference.name }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+
+            <!--
+            <tree-grid tree-data="tree_data" col-defs="col-defs" ng-show="!loading && success"></tree-grid>
+            -->
+
+            <ad-tree-browser class="ad-border-default"
+                   row-ng-class="{added:item._selected}"
+                   tree-root="root"
+                   child-node="children"
+                   children-padding="0"
+                   bordered="true"
+                   on-row-click="rowClicked"
+                   node-header-url="/static/adapt-strap/treeHeader.html"
+                   node-template-url="/static/adapt-strap/treeNodeWithCustomToggle.html"
+                   custom-toggle="true"
+                   ng-show="!loading && success">
+            </ad-tree-browser>
+
+            <br/><br/>
 
             {% endverbatim %}
 
@@ -100,18 +87,29 @@
 
 {% endblock %}
 
+{% block css %}
+    <link rel="stylesheet" href="{% static 'adapt-strap/adapt-strap.min.css' %}" />
+{% endblock %}
+
 {% block scripts %}
 
     <script src="{% static 'js/jquery-migrate-1.1.0.min.js' %}"></script>
     <script src="{% static 'jquery-syntaxhighlighter/jquery.syntaxhighlighter.min.js' %}"></script>   
     <script>
-        $.SyntaxHighlighter.init();
+        $(function () {
+            $.SyntaxHighlighter.init();
+            $('[data-toggle="tooltip"]').tooltip();
+        });
     </script>
 
     <!-- Angular scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.6/angular.min.js"></script>   
     <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.6/angular-route.min.js"></script> 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.6/angular-resource.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.6/angular-sanitize.min.js"></script> 
+    
+    <script src="{% static 'adapt-strap/adapt-strap.min.js' %}"></script>
+    <script src="{% static 'adapt-strap/adapt-strap.tpl.min.js' %}"></script>
 
     <!-- Angular controller -->
     <script src="{% static 'js/job.js' %}"></script>

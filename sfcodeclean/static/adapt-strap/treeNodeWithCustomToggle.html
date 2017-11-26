@@ -1,0 +1,17 @@
+<div>
+    <div class="col-sm-6 text-left" ng-style="{'padding-left': level * 15 + 'px'}">
+        <ad-tree-browser-node-toggle></ad-tree-browser-node-toggle>
+        {{ item.name }}
+    </div>
+    <div class="col-sm-3 text-left">
+        <div ng-show="item.TopLevel">
+            <span class="label label-success" ng-show="item.IsReferenced">Yes</span>
+            <span class="label label-danger" ng-show="!item.IsReferenced">No</span>
+        </div>
+    </div>
+    <div class="col-sm-3 text-right">
+        <button class="btn btn-sm btn-primary" ng-click="openModal(item.name, item.AppId)" ng-show="item.TopLevel">
+            View Class
+        </button>
+    </div>
+</div>
