@@ -150,9 +150,9 @@ if ON_HEROKU:
     STATIC_ROOT = os.path.join(PROJECT_ROOT, 'staticfiles')
 
     # Extra places for collectstatic to find static files.
-    #STATICFILES_DIRS = (
-    #    os.path.join(PROJECT_ROOT, 'static'),
-    #)
+    STATICFILES_DIRS = (
+        os.path.join(PROJECT_ROOT, 'static'),
+    )
 else:
     STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
 
