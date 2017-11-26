@@ -32,6 +32,10 @@ The API runs asynchronously, as jobs can take some time to run depending on the 
 Send a GET request:
 ```
 https://sfcodeclean.herokuapp.com/api/job/status/JOB_ID (eg. https://sfcodeclean.herokuapp.com/api/job/status/6210f461-0a4b-437d-be39-f885d6f3e543)
+```
+
+Example response
+```
 {
     "status": "Processing",
     "done": false,
@@ -48,6 +52,9 @@ The done and success variables will help you determine when your job is complete
 And finally, you can get your results. Send a GET request:
 ```
 https://sfcodeclean.herokuapp.com/api/job/JOB_ID (eg. https://sfcodeclean.herokuapp.com/api/job/6210f461-0a4b-437d-be39-f885d6f3e543)
+```
+Example response:
+```
 [
     {
         "DatabaseId": 123 // The app database Id of the class. Not really relevant for the API
