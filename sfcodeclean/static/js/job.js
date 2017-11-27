@@ -37,81 +37,52 @@ codeResultsApp.controller("CodeResultsController", function($scope, $http, $q) {
 
             console.log(response.data);
 
-            let classesReferencedBy = {};
-
-            // First, get a map of all external references for each class
-            // The Tooling API returns for each class, what classes and method IT calls
-            // But not what external methods call IT. So I won't to build that
-            angular.forEach(response.data, function(apexClass, apexClassKey) {
-
-                if (apexClass.SymbolTable != null && 'externalReferences' in apexClass.SymbolTable) {
-
-                    angular.forEach(apexClass.SymbolTable.externalReferences, function(extReference, extReferenceKey) {
-
-                        // Get the children occurrences for the reference
-                        children_lines = [];
-                        angular.forEach(extReference.references, function(lineReference, lineReferenceKey) {
-                            children_lines.push({
-                                name: 'Line ' + lineReference.line + ' Column ' + lineReference.column
-                            });
-                        });
-
-                        // Build the reference object to store against the obkect
-                        reference_object = {
-                            name: apexClass.Name,
-                            children: children_lines
-                        }
-
-                        if (extReference.name in classesReferencedBy) {
-
-                            // If list exists, add the occurence to the existing lsit
-                            classesReferencedBy[extReference.name].push(reference_object);
-                        }
-                        else {
-
-                            // Otherwise, create a new list
-                            classesReferencedBy[extReference.name] = [reference_object];
-                        }
-                    });
-                }
-            });
-
             // Clear the data
             $scope.root.children.length = 0;
 
             // Iterate over the response
             angular.forEach(response.data, function(apexClass, apexClassKey) {
 
-                // Push each class into the table
-                $scope.root.children.push({
+                // Build the child for methods and variables
+                let class_object = {
                     name: apexClass.Name,
-                    IsReferenced: (apexClass.Name in classesReferencedBy),
+                    IsReferenced: apexClass.IsReferenced,
                     Id: apexClass.ApexClassId,
                     DatabaseId: apexClass.DatabaseId,
-                    TopLevel: true,
-                    children: [
-                        {
-                            name: 'Referenced By',
-                            children: apexClass.Name in classesReferencedBy ? classesReferencedBy[apexClass.Name] : []
-                        },
-                        {
-                            name: 'External References',
-                            children: $scope.getChildren(apexClass, 'externalReferences')
-                        },
-                        {
-                            name: 'Methods',
-                            children: $scope.getChildren(apexClass, 'methods')
-                        },
-                        {
-                            name: 'Properties',
-                            children: $scope.getChildren(apexClass, 'properties')
-                        },
-                        {
-                            name: 'Variables',
-                            children: $scope.getChildren(apexClass, 'variables')
-                        },
-                    ]
-                });
+                    TopLevel: true
+                };
+
+                let childrenForClass = [];
+
+                // If the class has class references
+                if (apexClass.ReferencedBy.class) {
+
+                    childrenForClass.push({
+                        name: 'Class References',
+                        children: $scope.getChildrenFromArray(apexClass.ReferencedBy.class)
+                    });
+                }
+
+                // IF there are method references
+                if (apexClass.ReferencedBy.methods && Object.keys(apexClass.ReferencedBy.methods).length > 0) {
+
+                    childrenForClass.push({
+                        name: 'Methods',
+                        children: $scope.getChildrenFromObject(apexClass.ReferencedBy.methods)
+                    });
+                }
+
+                if (apexClass.ReferencedBy.variables && Object.keys(apexClass.ReferencedBy.variables).length > 0) {
+
+                    childrenForClass.push({
+                        name: 'Variables',
+                        children: $scope.getChildrenFromObject(apexClass.ReferencedBy.variables)
+                    });
+                }
+
+                class_object.children = childrenForClass;
+
+                $scope.root.children.push(class_object);
             });
 
             //$scope.classes = response.data;
@@ -170,19 +141,42 @@ codeResultsApp.controller("CodeResultsController", function($scope, $http, $q) {
         });
     };
 
-    $scope.getChildren = function(apexClass, child_name) {
+    $scope.getChildrenFromArray = function(childRows) {
 
         let children = [];
 
-        // Build the list of methods
-        if (apexClass.SymbolTable != null && child_name in apexClass.SymbolTable) {
-            angular.forEach(apexClass.SymbolTable[child_name], function(child, childKey) {
-                children.push({
-                    name: child.name
-                });
-            });
+        if (childRows) {
+
+            for (var i = 0; i < childRows.length; i++) {
+                children.push({name: childRows[i]});
+            }
         }
 
+        return children;
+    };
+
+    $scope.getChildrenFromObject = function(childRows) {
+
+        let children = [];
+
+        // Build the child object for the dictionary
+        for (var name in childRows) {
+
+            // Build the list of children for the given key
+            children_for_object = [];
+
+            let childLinesForProperty = childRows[name];
+
+            for (var i = 0; i < childLinesForProperty.length; i++) {
+
+                children_for_object.push({name: childLinesForProperty[i]});
+            }
+
+            children.push({
+                name: name,
+                children: children_for_object
+            });
+        }
         return children;
     };
 

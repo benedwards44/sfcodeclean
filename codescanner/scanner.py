@@ -106,6 +106,121 @@ class ScanJob(object):
         return json.dumps(result.json().get('SymbolTable'))
 
 
+    def process_external_references(self, classes):
+        """
+        For each Apex Class, now process all the external references
+        Basically, the SymbolTable returns all the classes and methods that "this" class references
+        But we want to flip that around and for each class, work out what external classess call "this" class
+        So, what we do is go through all the classes and methods that a class calls, and then built a dict and map this
+        back to the each class, and store it on that class to display in the UI later
+        """
+
+        references_dict = {}
+        
+        # Iterate over the classes
+        for apex_class in classes:
+
+            if apex_class.symbol_table_json:
+
+                # Load the JSON SymbolTable into a Python dict. 
+                # We need to traverse this to build a dict of all the external references, and 
+                # map back to the class
+                symbol_table = json.loads(apex_class.symbol_table_json)
+
+                if symbol_table and symbol_table.get('externalReferences'):
+
+                    # Iterate over each external reference for the class
+                    for external_reference in symbol_table.get('externalReferences'):
+
+                        # Create an empty reference object to populate all the references to
+                        reference_object = {
+                            'class': [],
+                            'methods': {},
+                            'variables': {}
+                        }
+
+                        # If the reference already exists, take the existing dict
+                        if external_reference.get('name') in references_dict:
+                            reference_object = references_dict.get(external_reference.get('name'))
+
+                        # Now add in the line and method references
+                        # These are any references to a class that isn't a method or property
+                        # Eg. Calling the class or constructor: MyClass myClass = new MyClass();
+                        for line in external_reference.get('references', []):
+                            reference_object['class'].append(self.get_line_description(apex_class.name, line))
+
+                        # Now iterate over all the methods to determine the references
+                        # For each method
+                        for method in external_reference.get('methods', []):
+
+                            # Need to determine if a key for the method already exists
+                            if method.get('name') in reference_object.get('methods'):
+                                method_references = reference_object.get('methods').get(method.get('name'))
+                            else:
+                                method_references = []
+
+                            # Add all references from this class to the list of references
+                            method_references.extend(self.get_lines_array(apex_class.name, method.get('references', [])))
+
+                            # Add back to the object map
+                            reference_object['methods'][method.get('name')] = method_references
+
+
+                        # Now process the variables
+                        for variable in external_reference.get('variables', []):
+                            
+                            # Need to determine if a key for the method already exists
+                            if variable.get('name') in reference_object.get('variables'):
+                                variable_references = reference_object.get('variables').get(variable.get('name'))
+                            else:
+                                variable_references = []
+
+                            # Add all references from this class to the list of references
+                            variable_references.extend(self.get_lines_array(apex_class.name, variable.get('references', [])))
+
+                            # Add back to the object map
+                            reference_object['variables'][variable.get('name')] = variable_references
+
+
+                        # Push back into the Dict
+                        references_dict[external_reference.get('name')] = reference_object
+
+        # Now, map back to the ApexClasses
+        for apex_class in classes:
+
+            # If the Apex Class is referenced external, dump the references
+            if apex_class.name in references_dict:
+                apex_class.is_referenced_externally = True
+                apex_class.referenced_by_json = json.dumps(references_dict.get(apex_class.name))
+
+            # Else dump in an empty array
+            else:
+                apex_class.referenced_by_json = json.dumps({
+                    'lines': [],
+                    'methods': {},
+                    'variables': {}
+                })
+
+            # Save the class
+            apex_class.save()
+
+    def get_lines_array(self, apex_class_name, lines):
+        """
+        Gets the array of line references for a class, method or variable
+        """
+        lines_display = []
+        for line in lines:
+            lines_display.append(self.get_line_description(apex_class_name, line))
+        return lines_display
+
+
+    def get_line_description(self, apex_class_name, line):
+        """
+        Build the line description for each reference
+        """
+        return '%s: Line %d Column %d' % (apex_class_name, line.get('line'), line.get('column'))
+
+
     def scan_org(self):
         """
         Execute all the logic to scan the Org
@@ -158,6 +273,11 @@ class ScanJob(object):
         for apex_class in classes:
             apex_class.symbol_table_json = self.get_symbol_table_for_class(apex_class.class_member_id)
             apex_class.save()
+
+        # For each Apex Class, now process all the external references
+        # Basically, the SymbolTable returns all the classes and methods that "this" class references
+        # But we want to flip that around and for each class, work out what external classess call "this" class
+        self.process_external_references(classes)
 
         self.job.status = 'Finished'
         self.job.save()

@@ -63,6 +63,11 @@ class ApexClass(models.Model):
 
     symbol_table_json = models.TextField(blank=True, null=True)
 
+    is_referenced_externally = models.BooleanField(default=False)
+
+    # Holds a JSON structure of all the external classes that call this class
+    referenced_by_json = models.TextField(blank=True, null=True)
+
     class Meta:
         ordering = ['name']
 
