@@ -198,19 +198,29 @@ class JobJsonView(View):
         """
         job = get_object_or_404(models.Job, slug=self.kwargs.get('slug'))
 
-        response = []
+        classes = []
 
         for apex_class in job.classes():
-            response.append({
+            classes.append({
                 'DatabaseId': apex_class.id,
                 'ApexClassId': apex_class.class_id,
                 'Name': apex_class.name,
                 'IsReferenced': apex_class.is_referenced_externally,
                 'SymbolTable': json.loads(apex_class.symbol_table_json) if apex_class.symbol_table_json else None,
-                'ReferencedBy': json.loads(apex_class.referenced_by_json) if apex_class.referenced_by_json else None
+                'ReferencedBy': json.loads(apex_class.referenced_by_json) if apex_class.referenced_by_json else None,
             }) 
 
-        return JsonResponse(response, safe=False)
+        return JsonResponse(
+            {
+                'id': job.slug,
+                'username': job.username,
+                'instanceUrl': job.instance_url,
+                'status': job.status,
+                'error': job.error,
+                'classes': classes
+            }, 
+            safe=False
+        )
 
 
 class ApexClassBodyView(DetailView):

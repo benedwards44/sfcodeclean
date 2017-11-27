@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.utils import timezone
 
 from .models import Job, ApexClass
 
@@ -94,7 +95,7 @@ class ScanJob(object):
         """
         url = '%ssobjects/ContainerAsyncRequest/%s' % (self.tooling_url, compile_id)
         result = requests.get(url, headers=self.headers)
-        return result.json().get('State')
+        return result.json()
 
 
     def get_symbol_table_for_class(self, class_member_id):
@@ -261,11 +262,25 @@ class ScanJob(object):
         while not compile_complete:
             time.sleep(3)
             compile_status = self.get_compile_status(compile_request_id)
-            compile_complete = compile_status in ['Invalidated','Completed','Failed','Error','Aborted']
+            compile_complete = compile_status.get('State') in ['Invalidated','Completed','Failed','Error','Aborted']
             
-        if compile_status != 'Completed':
+        if compile_status.get('State') != 'Completed':
+
             self.job.status = 'Error'
-            self.job.error = 'There was an error compiling your code. Please try again or check any compilation errors in your Org.'
+
+            # Build an array of errors
+            errors = []
+
+            # Add in the master error
+            if compile_status.get('ErrorMsg'):
+                errors.append(compile_status.get('ErrorMsg'))
+
+            # Build a list of errors
+            for component in compile_status.get('DeployDetails',{}).get('allComponentMessages'):
+                if not component.get('success'):
+                    errors.append(component.get('fullName') + ': ' + component.get('problem'))
+
+            self.job.error = 'There was an error compiling your code:\n- %s' % ('\n- '.join(errors))
             self.job.save()
             return
 
@@ -279,6 +294,7 @@ class ScanJob(object):
         # But we want to flip that around and for each class, work out what external classess call "this" class
         self.process_external_references(Job.objects.get(pk=self.job.pk).classes())
 
+        self.job.finished_date = timezone.now()
         self.job.status = 'Finished'
         self.job.save()
             

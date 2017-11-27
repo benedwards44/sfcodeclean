@@ -39,7 +39,7 @@ codeResultsApp.controller("CodeResultsController", function($scope, $http, $q) {
             $scope.root.children.length = 0;
 
             // Iterate over the response
-            angular.forEach(response.data, function(apexClass, apexClassKey) {
+            angular.forEach(response.data.classes, function(apexClass, apexClassKey) {
 
                 // Build the child for methods and variables
                 let class_object = {

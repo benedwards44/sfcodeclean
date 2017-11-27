@@ -11,79 +11,88 @@
 
     <hr/>
 
-    <div ng-app="codeResultsApp">
+    {% if job.status == 'Error' %}
+        <div class="alert alert-danger" role="alert">
+            <em>There was an error running your scan:</em> <br/>
+            {{ job.error}}
+        </div>
+    {% else %}
 
-        <div ng-controller="CodeResultsController" ng-init="init('{{ job.slug }}')">
+        <div ng-app="codeResultsApp">
 
-            {% verbatim %}
+            <div ng-controller="CodeResultsController" ng-init="init('{{ job.slug }}')">
 
-            <div class="col-md-6 col-md-offset-3" ng-show="loading">
-                <div class="pull-left">
-                    <img src="/static/images/loading.gif" alt="Loading" title="Loading" />
+                {% verbatim %}
+
+                <div class="col-md-6 col-md-offset-3" ng-show="loading">
+                    <div class="pull-left">
+                        <img src="/static/images/loading.gif" alt="Loading" title="Loading" />
+                    </div>
+                    <div class="pull-right" style="float:left;margin-left:20px;">
+                        <h1 style="font-size:1.5em;margin-top:20px;">Loading...</h1>
+                        <p>Building your code scan results...</p>
+                    </div>
+                    <div class="clearfix"></div>
                 </div>
-                <div class="pull-right" style="float:left;margin-left:20px;">
-                    <h1 style="font-size:1.5em;margin-top:20px;">Loading...</h1>
-                    <p>Building your code scan results...</p>
+
+                <div ng-show="!success">
+                    <div class="alert alert-danger" role="alert">
+                        {{ error }}
+                    </div>
                 </div>
+
                 <div class="clearfix"></div>
-            </div>
 
-            <div ng-show="!success">
-                <div class="alert alert-danger" role="alert">
-                    {{ error }}
+                <div class="alert alert-info alert-dismissible" role="alert" ng-show="!loading && success">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    Note: Currently this app only shows <strong>Apex Class</strong> dependencies. It does not show code used within VisualForce pages, components, or Lightning Components.
                 </div>
+
+
+                <!--
+                <tree-grid tree-data="tree_data" col-defs="col-defs" ng-show="!loading && success"></tree-grid>
+                -->
+
+                <ad-tree-browser class="ad-border-default"
+                       row-ng-class="{added:item._selected}"
+                       tree-root="root"
+                       child-node="children"
+                       children-padding="0"
+                       bordered="true"
+                       on-row-click="rowClicked"
+                       node-header-url="/static/adapt-strap/treeHeader.html"
+                       node-template-url="/static/adapt-strap/treeNodeWithCustomToggle.html"
+                       custom-toggle="true"
+                       ng-show="!loading && success">
+                </ad-tree-browser>
+
+                <br/><br/>
+
+                {% endverbatim %}
+
             </div>
-
-            <div class="clearfix"></div>
-
-            <div class="alert alert-info alert-dismissible" role="alert" ng-show="!loading && success">
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-                Note: Currently this app only shows <strong>Apex Class</strong> dependencies. It does not show code used within VisualForce pages, components, or Lightning Components.
-            </div>
-
-
-            <!--
-            <tree-grid tree-data="tree_data" col-defs="col-defs" ng-show="!loading && success"></tree-grid>
-            -->
-
-            <ad-tree-browser class="ad-border-default"
-                   row-ng-class="{added:item._selected}"
-                   tree-root="root"
-                   child-node="children"
-                   children-padding="0"
-                   bordered="true"
-                   on-row-click="rowClicked"
-                   node-header-url="/static/adapt-strap/treeHeader.html"
-                   node-template-url="/static/adapt-strap/treeNodeWithCustomToggle.html"
-                   custom-toggle="true"
-                   ng-show="!loading && success">
-            </ad-tree-browser>
-
-            <br/><br/>
-
-            {% endverbatim %}
 
         </div>
 
-    </div>
-
-    <!-- Modal -->
-    <div class="modal fade" id="viewCodeModal" tabindex="-1" role="dialog" aria-labelledby="viewCodeModalLabel">
-        <div class="modal-dialog modal-lg" role="document" style="width: 1100px;">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                    <h4 class="modal-title" id="viewCodeModalLabel"></h4>
-                </div>
-                <div class="modal-body" id="viewCodeBody"></div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <!-- Modal -->
+        <div class="modal fade" id="viewCodeModal" tabindex="-1" role="dialog" aria-labelledby="viewCodeModalLabel">
+            <div class="modal-dialog modal-lg" role="document" style="width: 1100px;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="viewCodeModalLabel"></h4>
+                    </div>
+                    <div class="modal-body" id="viewCodeBody"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+
+    {% endif %}
 
 {% endblock %}
 
