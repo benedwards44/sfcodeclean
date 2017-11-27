@@ -277,7 +277,7 @@ class ScanJob(object):
         # For each Apex Class, now process all the external references
         # Basically, the SymbolTable returns all the classes and methods that "this" class references
         # But we want to flip that around and for each class, work out what external classess call "this" class
-        self.process_external_references(Job.objects.get(pk=job.pk).classes())
+        self.process_external_references(Job.objects.get(pk=self.job.pk).classes())
 
         self.job.status = 'Finished'
         self.job.save()
