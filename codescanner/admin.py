@@ -7,7 +7,8 @@ from . import models
 
 class ApexClassInline(admin.TabularInline):
 
-    fields = ['class_id', 'class_member_id','name','symbol_table_json']
+    fields = ['class_id', 'class_member_id','name',]
+    readonly_fields = ['class_id', 'class_member_id','name',]
     model = models.ApexClass
     extra = 0
 
