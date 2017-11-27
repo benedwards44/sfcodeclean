@@ -35,8 +35,6 @@ codeResultsApp.controller("CodeResultsController", function($scope, $http, $q) {
         })
         .then(function successCallback(response) {
 
-            console.log(response.data);
-
             // Clear the data
             $scope.root.children.length = 0;
 
