@@ -269,10 +269,13 @@ class ScanJob(object):
             self.job.save()
             return
 
+        classes = []
         # Once complete, we can now pull the SymbolTable for each ApexClass
         for apex_class in classes:
             apex_class.symbol_table_json = self.get_symbol_table_for_class(apex_class.class_member_id)
             apex_class.save()
+
+            classes.append(apex_class)
 
         # For each Apex Class, now process all the external references
         # Basically, the SymbolTable returns all the classes and methods that "this" class references
