@@ -21,11 +21,9 @@
 
     <div class="error" style="display:none;">
         <div class="alert alert-danger" role="alert">
-            <p>
-                There was an error processing your request: <i class="error_message"></i>
-                <br/><br/>
-                Please <a href="/">return</a> to the home page and try again.
-            </p>
+            There was an error processing your request:
+            <p id="error_message"></p>
+            <p>Please <a href="/">return</a> to the home page and try again.</p>
         </div>
     </div>
 
@@ -38,7 +36,7 @@
                 dataType: 'json',
                 success: function(resp) 
                 {
-                    if (resp.status == 'Finished')
+                    if (resp.status == 'Finished') 
                     {
                         window.location = "{% url 'job' slug=object.slug %}";
                     } 
@@ -46,7 +44,7 @@
                     {
                         $('.loading-components').hide();
                         $('.error').show();
-                        $('.error_message').text(resp.error);
+                        $('#error_message').html(resp.error.replace(/\n/g, "<br />"));
                         clearInterval(refreshId);
                     }
                     // Else job is still running, this will re-run shortly.
@@ -55,7 +53,7 @@
                 { 
                     $('.loading-components').hide();
                     $('.error').show();
-                    $('.error_message').text(resp);
+                    $('#error_message').html(resp);
                     clearInterval(refreshId);
                 }
             });

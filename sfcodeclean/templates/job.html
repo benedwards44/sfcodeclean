@@ -14,7 +14,7 @@
     {% if job.status == 'Error' %}
         <div class="alert alert-danger" role="alert">
             <em>There was an error running your scan:</em> <br/>
-            {{ job.error}}
+            {{ job.error|linebreaksbr }}
         </div>
     {% else %}
 

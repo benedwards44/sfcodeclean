@@ -280,7 +280,7 @@ class ScanJob(object):
                 if not component.get('success'):
                     errors.append(component.get('fullName') + ': ' + component.get('problem'))
 
-            self.job.error = 'There was an error compiling your code:\n- %s' % ('\n- '.join(errors))
+            self.job.error = 'Code compilation error:\n- %s' % ('\n- '.join(errors))
             self.job.save()
             return
 
