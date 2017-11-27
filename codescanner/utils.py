@@ -55,12 +55,20 @@ def send_finished_email(job):
     Send email notifying of finished job
     """
 
-    email_body = 'Your Salesforce Apex Code Scan job is complete:\n'
-    email_body += 'https://sfcodeclean.herokuapp.com/job/' + job.slug
-    email_body += '\n\nYour result will be deleted after one day in order to avoid storing any metadata.'
+    if job.status == 'Error':
+
+        subject = 'There was an error running for Apex Code Scan'
+        email_body = job.error
+
+    else:
+
+        subject = 'Your Salesforce Apex Code Scan results are ready.'
+        email_body = 'Your Salesforce Apex Code Scan job is complete:\n'
+        email_body += 'https://sfcodeclean.herokuapp.com/job/' + job.slug
+        email_body += '\n\nYour result will be deleted after one day in order to avoid storing any metadata.'
 
     send_mail(
-        'Your Salesforce Apex Code Scan results are ready.', 
+        subject, 
         email_body, 
         settings.DEFAULT_FROM_EMAIL, 
         [job.email], 
