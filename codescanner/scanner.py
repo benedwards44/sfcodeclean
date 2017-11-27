@@ -1,6 +1,6 @@
 from django.conf import settings
 
-from .models import ApexClass
+from .models import Job, ApexClass
 
 import uuid
 import requests
@@ -265,22 +265,19 @@ class ScanJob(object):
             
         if compile_status != 'Completed':
             self.job.status = 'Error'
-            self.job.error = 'There was an error compiling your code. Please try again.'
+            self.job.error = 'There was an error compiling your code. Please try again or check any compilation errors in your Org.'
             self.job.save()
             return
 
-        classes = []
         # Once complete, we can now pull the SymbolTable for each ApexClass
         for apex_class in classes:
             apex_class.symbol_table_json = self.get_symbol_table_for_class(apex_class.class_member_id)
             apex_class.save()
 
-            classes.append(apex_class)
-
         # For each Apex Class, now process all the external references
         # Basically, the SymbolTable returns all the classes and methods that "this" class references
         # But we want to flip that around and for each class, work out what external classess call "this" class
-        self.process_external_references(classes)
+        self.process_external_references(Job.objects.get(pk=job.pk).classes())
 
         self.job.status = 'Finished'
         self.job.save()
