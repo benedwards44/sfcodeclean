@@ -1,7 +1,9 @@
 from django.conf import settings
 from django.utils import timezone
 
-from .models import Job, ApexClass
+from .models import Job, ApexClass, ApexPageComponent
+
+from bs4 import BeautifulSoup
 
 import uuid
 import requests
@@ -32,21 +34,33 @@ class ScanJob(object):
         self.tooling_url = '%s%s' % (self.job.instance_url, settings.SALESFORCE_TOOLING_URL)
 
 
-    def get_all_classes(self):
+    def get_all_records(self, object_name):
         """
-        Queries all Apex Classes within an Org
+        Queries for all records specified by the object_name
         """
-
-        classes = []
-        url = '%squery/?q=SELECT+Id,Name,Body+FROM+ApexClass+WHERE+NamespacePrefix=NULL' % (self.tooling_url)
+        records = []
+        url = '%squery/?q=SELECT+Id,Name,Body+FROM+%s+WHERE+NamespacePrefix=NULL' % (object_name, self.tooling_url)
         result = requests.get(url, headers=self.headers)
         classes.extend(result.json().get('records'))
 
         # If there are more classes, we need to keep calling for more.
         while 'nextRecordsUrl' in result.json():
             result = requests.get(self.job.instance_url + result.json().get('nextRecordsUrl'), headers=self.headers)
-            classes.extend(result.json().get('records'))
+            records.extend(result.json().get('records'))
         return classes
+
+
+    def get_visualforce(self, object_name):
+
+        # Load all VF and Components
+        for visualforce in self.get_all_records(object_name):
+            new_vf = ApexPageComponent()
+            new_vf.job = self.job
+            new_vf.sf_id = visualforce.get('Id')
+            new_vf.name = visualforce.get('Name')
+            new_vf.body = visualforce.get('Body')
+            new_vf.type = 'Page' if object_name == 'ApexPage' else 'Component'
+            new_vf.save()
 
 
     def get_metadata_container_id(self):
@@ -107,7 +121,74 @@ class ScanJob(object):
         return json.dumps(result.json().get('SymbolTable'))
 
 
-    def process_external_references(self, classes):
+    def get_class_to_vf_usage_dict(self):
+        """
+        First things first, we're going to go through all the Apex Pages and Components
+        And build a dictionary of each Apex Class and the VisualForce it's used it
+        That way, when we go through the classes later
+        We can go through the methods and properties later on
+        Eg.
+        {
+            'AccountController': [
+                'Account.page',
+                'Account.component'
+            ],
+            'AccountExtensionController': [
+                'Account.page'
+            ]
+        }
+        """
+
+        apex_to_vf = {}
+
+        for visualforce in self.job.visualforce():
+
+            # Load a soup object for the VF page
+            # BeautifulSoup is an HTML parser
+            # VF is pretty close to HTML, so going to leverage
+            # that library to find any controllers or extensions for the VF
+            soup = BeautifulSoup(visualforce.body, 'html.parser')
+
+            if visualforce.type == 'Page':
+                root_attribute = soup.findAll('apex:page')[0] 
+            else:
+                root_attribute = soup.findAll('apex:component')[0] 
+
+            # Get the controller for the page
+            controller = page.get('controller','').strip()
+
+            # If there was a controller found, add it to the dictionary
+            if controller:
+                if controller in apex_to_vf:
+                    apex_to_vf[controller].append(visualforce)
+                else:
+                    apex_to_vf[controller] = [visualforce]
+
+            # Load the extensions
+            extensions = extensions = page.get('extensions','').strip()
+            
+            # If extensions are found
+            if extensions:
+
+                # There could be multiple extensions (seperated by comma), so process
+                # them individually
+                for extension in extensions.split(','):
+
+                    # Trim any whitespace
+                    extension = extension.strip()
+
+                    # And add to the dict
+                    if extension in apex_to_vf:
+                        apex_to_vf[extension].append(visualforce)
+                    else:
+                        apex_to_vf[extension] = [visualforce]
+
+
+        return apex_to_vf
+
+                   
+
+    def process_external_references(self):
         """
         For each Apex Class, now process all the external references
         Basically, the SymbolTable returns all the classes and methods that "this" class references
@@ -116,10 +197,16 @@ class ScanJob(object):
         back to the each class, and store it on that class to display in the UI later
         """
 
+        # First things first, we're going to go through all the Apex Pages and Components
+        # And build a dictionary of each Apex Class and the VisualForce it's used it
+        # That way, when we go through the classes later
+        # We can go through the methods and properties later on
+        apex_to_vf = self.get_class_to_vf_usage_dict()
+
         references_dict = {}
         
         # Iterate over the classes
-        for apex_class in classes:
+        for apex_class in self.job.classes():
 
             if apex_class.symbol_table_json:
 
@@ -128,17 +215,78 @@ class ScanJob(object):
                 # map back to the class
                 symbol_table = json.loads(apex_class.symbol_table_json)
 
+                # Create an empty reference object to populate all the references to
+                reference_object = {
+                    'class': [],
+                    'methods': {},
+                    'variables': {},
+                    'properties': {},
+                }
+
+                # Add any VF pages as class references
+                if apex_class.name in apex_to_vf:
+
+                    # Add the VF references to the class
+                    for visualforce in apex_to_vf.get(apex_class.name):
+                        reference_object['class'].append(visualforce.Name)
+
+                    # Let's see what methods are used in VisualForce
+                    if symbol_table and symbol_table.get('methods'):
+
+                        for method in symbol_table.get('methods'):
+
+                            # Get the VF method name
+                            method_vf_name = '{!' + method.get('name') + '}'
+
+                            for visualforce in apex_to_vf.get(apex_class.name):
+
+                                # Determine if the method name is found in the VF page
+                                if method_vf_name in visualforce.body:
+
+                                    # Need to determine if a key for the method already exists
+                                    if method.get('name') in reference_object.get('methods'):
+                                        method_references = reference_object.get('methods').get(method.get('name'))
+                                    else:
+                                        method_references = []
+
+                                    # Add the VisualForce page as a method reference
+                                    if visualforce.name not in method_references:
+                                        method_references.append(visualforce.name)
+
+                                    reference_object['methods'][method.get('name')] = method_references
+
+                    # And now do the properties
+                    if symbol_table and symbol_table.get('properties'):
+                        
+                        for apex_property in symbol_table.get('properties'):
+
+                            # Get the VF method name
+                            property_vf_name = '{!' + apex_property.get('name') + '}'
+
+                            for visualforce in apex_to_vf.get(apex_class.name):
+
+                                # Determine if the method name is found in the VF page
+                                if property_vf_name in visualforce.body:
+
+                                    # Need to determine if a key for the method already exists
+                                    if apex_property.get('name') in reference_object.get('properties'):
+                                        property_references = reference_object.get('properties').get(apex_property.get('name'))
+                                    else:
+                                        property_references = []
+
+                                    # Add the VisualForce page as a method reference
+                                    if visualforce.name not in property_references:
+                                        property_references.append(visualforce.name)
+
+                                    reference_object['properties'][apex_property.get('name')] = property_references
+
+
+                # Now, load any external references for the class.
+                # This is all Apex that this class CALLS OUT to, not what references it
                 if symbol_table and symbol_table.get('externalReferences'):
 
                     # Iterate over each external reference for the class
                     for external_reference in symbol_table.get('externalReferences'):
-
-                        # Create an empty reference object to populate all the references to
-                        reference_object = {
-                            'class': [],
-                            'methods': {},
-                            'variables': {}
-                        }
 
                         # If the reference already exists, take the existing dict
                         if external_reference.get('name') in references_dict:
@@ -182,12 +330,11 @@ class ScanJob(object):
                             # Add back to the object map
                             reference_object['variables'][variable.get('name')] = variable_references
 
-
                         # Push back into the Dict
                         references_dict[external_reference.get('name')] = reference_object
 
         # Now, map back to the ApexClasses
-        for apex_class in classes:
+        for apex_class in self.job.classes():
 
             # If the Apex Class is referenced external, dump the references
             if apex_class.name in references_dict:
@@ -199,7 +346,8 @@ class ScanJob(object):
                 apex_class.referenced_by_json = json.dumps({
                     'lines': [],
                     'methods': {},
-                    'variables': {}
+                    'variables': {},
+                    'properties': {},
                 })
 
             # Save the class
@@ -236,7 +384,7 @@ class ScanJob(object):
         classes = []
 
         # Query for and get all classes
-        for apex_class in self.get_all_classes():
+        for apex_class in self.get_all_records('ApexClass'):
 
             # Create the new class
             new_class = ApexClass()
@@ -251,6 +399,11 @@ class ScanJob(object):
             new_class.save()
 
             classes.append(new_class)
+
+
+        # Load all the Apex Pages and Apex Components as well
+        self.get_visualforce('ApexPage')
+        self.get_visualforce('ApexComponent')
 
         # Now we have created a ApexClassMember for each class, we need to "compile" all the classes
         # This runs to build the symbol table
@@ -289,10 +442,14 @@ class ScanJob(object):
             apex_class.symbol_table_json = self.get_symbol_table_for_class(apex_class.class_member_id)
             apex_class.save()
 
+
+        # Re-query for the job, to load all new child references
+        self.job = Job.objects.get(pk=self.job.pk)
+
         # For each Apex Class, now process all the external references
         # Basically, the SymbolTable returns all the classes and methods that "this" class references
         # But we want to flip that around and for each class, work out what external classess call "this" class
-        self.process_external_references(Job.objects.get(pk=self.job.pk).classes())
+        self.process_external_references()
 
         self.job.finished_date = timezone.now()
         self.job.status = 'Finished'

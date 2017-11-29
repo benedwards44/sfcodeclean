@@ -39,6 +39,9 @@ class Job(models.Model):
     def classes(self):
         return self.apexclass_set.all().order_by('name')
 
+    def visualforce(self):
+        return self.apexpagecomponent_set.all().order_by('name')
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = uuid.uuid4()
@@ -67,6 +70,31 @@ class ApexClass(models.Model):
 
     # Holds a JSON structure of all the external classes that call this class
     referenced_by_json = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __unicode__(self):
+        return self.name
+
+
+class ApexPageComponent(models.Model):
+    """
+    Hold details about an ApexPage
+    """
+
+    job = models.ForeignKey(Job)
+
+    sf_id = models.CharField(max_length=18)
+    name = models.CharField(max_length=80)
+    body = models.TextField()
+
+    TYPE_CHOICES = (
+        ('Page', 'Page'),
+        ('Component', 'Component'),
+    )
+
+    type = models.CharField(max_length=10, default='Page')
 
     class Meta:
         ordering = ['name']

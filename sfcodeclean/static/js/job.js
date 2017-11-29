@@ -38,6 +38,8 @@ codeResultsApp.controller("CodeResultsController", function($scope, $http, $q) {
             // Clear the data
             $scope.root.children.length = 0;
 
+            console.log(response.data.classes);
+
             // Iterate over the response
             angular.forEach(response.data.classes, function(apexClass, apexClassKey) {
 
