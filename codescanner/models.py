@@ -87,6 +87,7 @@ class ApexPageComponent(models.Model):
 
     sf_id = models.CharField(max_length=18)
     name = models.CharField(max_length=80)
+    controller = models.CharField(max_length=80, blank=True, null=True)
     body = models.TextField()
 
     TYPE_CHOICES = (

@@ -39,18 +39,57 @@ class ScanJob(object):
         Queries for all records specified by the object_name
         """
         records = []
-        url = '%squery/?q=SELECT+Id,Name,Body+FROM+%s+WHERE+NamespacePrefix=NULL' % (object_name, self.tooling_url)
+
+        url = '%squery/?q=SELECT+Id,Name,%s+FROM+%s+WHERE+NamespacePrefix=NULL' % (
+            self.tooling_url, ('Body' if object_name == 'ApexClass' else 'Markup,ControllerKey,ControllerType'), object_name
+        )
+
         result = requests.get(url, headers=self.headers)
-        classes.extend(result.json().get('records'))
+        records.extend(result.json().get('records'))
 
         # If there are more classes, we need to keep calling for more.
         while 'nextRecordsUrl' in result.json():
             result = requests.get(self.job.instance_url + result.json().get('nextRecordsUrl'), headers=self.headers)
             records.extend(result.json().get('records'))
-        return classes
+        return records
+
+    def get_extensions_from_body(self, body):
+        """
+        Retrieve the extensions for a VisualForce page body
+        """
+
+        extensions_list = []
+
+        # Load a soup object for the VF page
+        # BeautifulSoup is an HTML parser
+        # VF is pretty close to HTML, so going to leverage
+        # that library to find any controllers or extensions for the VF
+        soup = BeautifulSoup(body, 'html.parser')
+
+        # Load the apex:page attribute
+        page_attribute = soup.findAll({'apex:page'})
+
+        if page_attribute:
+
+            page_attribute = page_attribute[0]
+
+            # Load the extensions from the attribute
+            extensions = page_attribute.get('extensions','').strip()
+
+            if extensions:
+                # There could be multiple extensions (seperated by comma), so process
+                # them individually
+                for extension in extensions.split(','):
+                    # Trim any whitespace and add to the list to reutrn
+                    extensions_list.append(extension.strip())
+                
+        return extensions_list
 
 
     def get_visualforce(self, object_name):
+        """
+        Generic method for loading all ApexPage and ApexComponent components from the Org
+        """
 
         # Load all VF and Components
         for visualforce in self.get_all_records(object_name):
@@ -58,7 +97,23 @@ class ScanJob(object):
             new_vf.job = self.job
             new_vf.sf_id = visualforce.get('Id')
             new_vf.name = visualforce.get('Name')
-            new_vf.body = visualforce.get('Body')
+            new_vf.body = visualforce.get('Markup')
+
+            controllers = []
+
+            # If ControlerType == true, this covers ApexComponent controllers
+            # And VF pages where the controller isn't a standard controller
+            if visualforce.get('ControllerType') == '2' and visualforce.get('ControllerKey') and 'NullController' not in visualforce.get('ControllerKey'):
+                controllers.append(visualforce.get('ControllerKey'))
+
+            # For ApexPages, we also need to check the extensions to see if there's any values to add
+            if object_name == 'ApexPage':
+                controllers.extend(self.get_extensions_from_body(new_vf.body))
+
+            # Add the controllers to the text field
+            if controllers:
+                new_vf.controller = ','.join(controllers)
+
             new_vf.type = 'Page' if object_name == 'ApexPage' else 'Component'
             new_vf.save()
 
@@ -138,51 +193,21 @@ class ScanJob(object):
             ]
         }
         """
-
         apex_to_vf = {}
 
         for visualforce in self.job.visualforce():
 
-            # Load a soup object for the VF page
-            # BeautifulSoup is an HTML parser
-            # VF is pretty close to HTML, so going to leverage
-            # that library to find any controllers or extensions for the VF
-            soup = BeautifulSoup(visualforce.body, 'html.parser')
-
-            if visualforce.type == 'Page':
-                root_attribute = soup.findAll('apex:page')[0] 
-            else:
-                root_attribute = soup.findAll('apex:component')[0] 
-
-            # Get the controller for the page
-            controller = page.get('controller','').strip()
-
             # If there was a controller found, add it to the dictionary
-            if controller:
-                if controller in apex_to_vf:
-                    apex_to_vf[controller].append(visualforce)
-                else:
-                    apex_to_vf[controller] = [visualforce]
+            if visualforce.controller:
 
-            # Load the extensions
-            extensions = extensions = page.get('extensions','').strip()
-            
-            # If extensions are found
-            if extensions:
+                # There could be multiple controllers, so iterate through the list
+                for controller in visualforce.controller.split(','):
 
-                # There could be multiple extensions (seperated by comma), so process
-                # them individually
-                for extension in extensions.split(','):
-
-                    # Trim any whitespace
-                    extension = extension.strip()
-
-                    # And add to the dict
-                    if extension in apex_to_vf:
-                        apex_to_vf[extension].append(visualforce)
+                    # Add the controller to the dict
+                    if controller in apex_to_vf:
+                        apex_to_vf[controller].append(visualforce)
                     else:
-                        apex_to_vf[extension] = [visualforce]
-
+                        apex_to_vf[controller] = [visualforce]
 
         return apex_to_vf
 
@@ -217,7 +242,8 @@ class ScanJob(object):
 
                 # Create an empty reference object to populate all the references to
                 reference_object = {
-                    'class': [],
+                    'visualforce': [],
+                    'classes': {},
                     'methods': {},
                     'variables': {},
                     'properties': {},
@@ -228,7 +254,8 @@ class ScanJob(object):
 
                     # Add the VF references to the class
                     for visualforce in apex_to_vf.get(apex_class.name):
-                        reference_object['class'].append(visualforce.Name)
+                        # Add the list of references to the class
+                        reference_object['visualforce'].append(self.get_vf_name(visualforce))
 
                     # Let's see what methods are used in VisualForce
                     if symbol_table and symbol_table.get('methods'):
@@ -240,6 +267,8 @@ class ScanJob(object):
 
                             for visualforce in apex_to_vf.get(apex_class.name):
 
+                                vf_name = visualforce.name + ' (' + visualforce.type + ')'
+
                                 # Determine if the method name is found in the VF page
                                 if method_vf_name in visualforce.body:
 
@@ -247,11 +276,11 @@ class ScanJob(object):
                                     if method.get('name') in reference_object.get('methods'):
                                         method_references = reference_object.get('methods').get(method.get('name'))
                                     else:
-                                        method_references = []
+                                        method_references = {}
 
                                     # Add the VisualForce page as a method reference
-                                    if visualforce.name not in method_references:
-                                        method_references.append(visualforce.name)
+                                    if self.get_vf_name(visualforce) not in method_references:
+                                        method_references[self.get_vf_name(visualforce)] = []
 
                                     reference_object['methods'][method.get('name')] = method_references
 
@@ -275,11 +304,14 @@ class ScanJob(object):
                                         property_references = []
 
                                     # Add the VisualForce page as a method reference
-                                    if visualforce.name not in property_references:
-                                        property_references.append(visualforce.name)
+                                    if self.get_vf_name(visualforce) not in property_references:
+                                        property_references.append(self.get_vf_name(visualforce))
 
                                     reference_object['properties'][apex_property.get('name')] = property_references
 
+
+                    # Push back into the Dict
+                    references_dict[apex_class.name] = reference_object
 
                 # Now, load any external references for the class.
                 # This is all Apex that this class CALLS OUT to, not what references it
@@ -288,47 +320,70 @@ class ScanJob(object):
                     # Iterate over each external reference for the class
                     for external_reference in symbol_table.get('externalReferences'):
 
-                        # If the reference already exists, take the existing dict
-                        if external_reference.get('name') in references_dict:
-                            reference_object = references_dict.get(external_reference.get('name'))
+                        # We don't want to include anything with a namespace
+                        if not external_reference.get('namespace'):
 
-                        # Now add in the line and method references
-                        # These are any references to a class that isn't a method or property
-                        # Eg. Calling the class or constructor: MyClass myClass = new MyClass();
-                        for line in external_reference.get('references', []):
-                            reference_object['class'].append(self.get_line_description(apex_class.name, line))
+                            # If the reference already exists, take the existing dict
+                            if external_reference.get('name') in references_dict:
+                                reference_object = references_dict.get(external_reference.get('name'))
 
-                        # Now iterate over all the methods to determine the references
-                        # For each method
-                        for method in external_reference.get('methods', []):
+                            # Now add in the line and method references
+                            # These are any references to a class that isn't a method or property
+                            # Eg. Calling the class or constructor: MyClass myClass = new MyClass();
+                            for line in external_reference.get('references', []):
 
-                            # Need to determine if a key for the method already exists
-                            if method.get('name') in reference_object.get('methods'):
-                                method_references = reference_object.get('methods').get(method.get('name'))
-                            else:
-                                method_references = []
+                                references = [self.get_line_description(line)]
 
-                            # Add all references from this class to the list of references
-                            method_references.extend(self.get_lines_array(apex_class.name, method.get('references', [])))
+                                # If the class already exists, add the new reference as a child
+                                if apex_class.name in reference_object['classes']:
+                                    references = reference_object['classes'][apex_class.name]
+                                    references.append(self.get_line_description(line))
 
-                            # Add back to the object map
-                            reference_object['methods'][method.get('name')] = method_references
+                                # Add the list of references to the class
+                                reference_object['classes'][apex_class.name] = references
+
+                            # Now iterate over all the methods to determine the references
+                            # For each method
+                            for method in external_reference.get('methods', []):
+
+                                method_references = {}
+
+                                # Need to determine if a key for the method already exists
+                                if method.get('name') in reference_object.get('methods'):
+                                    method_references = reference_object.get('methods').get(method.get('name'))
+
+                                lines = []
+                                if apex_class.name in method_references:
+                                    lines = method_references.get(apex_class.name)
+
+                                for line in method.get('references', []):
+                                    lines.append(self.get_line_description(line))
+
+                                method_references[apex_class.name] = lines
+
+                                # Add back to the object map
+                                reference_object['methods'][method.get('name')] = method_references
 
 
-                        # Now process the variables
-                        for variable in external_reference.get('variables', []):
-                            
-                            # Need to determine if a key for the method already exists
-                            if variable.get('name') in reference_object.get('variables'):
-                                variable_references = reference_object.get('variables').get(variable.get('name'))
-                            else:
-                                variable_references = []
+                            # Now process the variables
+                            for variable in external_reference.get('variables', []):
 
-                            # Add all references from this class to the list of references
-                            variable_references.extend(self.get_lines_array(apex_class.name, variable.get('references', [])))
+                                variable_references = {}
+                                
+                                # Need to determine if a key for the method already exists
+                                if variable.get('name') in reference_object.get('variables'):
+                                    variable_references = reference_object.get('variables').get(variable.get('name'))
+                               
+                                lines = []
+                                if apex_class.name in variable_references:
+                                    lines = variable_references.get(apex_class.name)
 
-                            # Add back to the object map
-                            reference_object['variables'][variable.get('name')] = variable_references
+                                for line in variable.get('references', []):
+                                    lines.append(self.get_line_description(line))
+
+                                # Add back to the object map
+                                reference_object['variables'][variable.get('name')] = variable_references
+
 
                         # Push back into the Dict
                         references_dict[external_reference.get('name')] = reference_object
@@ -344,7 +399,8 @@ class ScanJob(object):
             # Else dump in an empty array
             else:
                 apex_class.referenced_by_json = json.dumps({
-                    'lines': [],
+                    'visualforce': [],
+                    'classes': {},
                     'methods': {},
                     'variables': {},
                     'properties': {},
@@ -353,21 +409,26 @@ class ScanJob(object):
             # Save the class
             apex_class.save()
 
+
+    def get_vf_name(self, visualforce):
+        return visualforce.name + ' (' + visualforce.type + ')'
+
     def get_lines_array(self, apex_class_name, lines):
         """
         Gets the array of line references for a class, method or variable
         """
         lines_display = []
         for line in lines:
-            lines_display.append(self.get_line_description(apex_class_name, line))
+            if self.get_line_description(apex_class_name, line) not in lines_display:
+                lines_display.append(self.get_line_description(apex_class_name, line))
         return lines_display
 
 
-    def get_line_description(self, apex_class_name, line):
+    def get_line_description(self, line):
         """
         Build the line description for each reference
         """
-        return '%s: Line %d Column %d' % (apex_class_name, line.get('line'), line.get('column'))
+        return 'Line %d Column %d' % (line.get('line'), line.get('column'))
 
 
     def scan_org(self):
@@ -377,6 +438,7 @@ class ScanJob(object):
 
         # Delete any existing classes
         self.job.classes().delete()
+        self.job.visualforce().delete()
 
         # Create the metadata container
         metadata_container_id = self.get_metadata_container_id()

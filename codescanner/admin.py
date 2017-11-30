@@ -15,8 +15,8 @@ class ApexClassInline(admin.TabularInline):
 
 class ApexPageComponentInline(admin.TabularInline):
 
-    fields = ['sf_id', 'name']
-    readonly_fields = ['sf_id', 'name']
+    fields = ['sf_id','name','type','controller']
+    readonly_fields = ['sf_id','name','type','controller']
     model = models.ApexPageComponent
     extra = 0
 

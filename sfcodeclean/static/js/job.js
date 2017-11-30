@@ -55,11 +55,20 @@ codeResultsApp.controller("CodeResultsController", function($scope, $http, $q) {
                 let childrenForClass = [];
 
                 // If the class has class references
-                if (apexClass.ReferencedBy.class) {
+                if (apexClass.ReferencedBy.visualforce && apexClass.ReferencedBy.visualforce.length > 0) {
+
+                    childrenForClass.push({
+                        name: 'VisualForce',
+                        children: $scope.getChildrenFromArray(apexClass.ReferencedBy.visualforce)
+                    });
+                }
+
+                // If the class has class references
+                if (apexClass.ReferencedBy.classes && Object.keys(apexClass.ReferencedBy.classes).length > 0) {
 
                     childrenForClass.push({
                         name: 'Class References',
-                        children: $scope.getChildrenFromArray(apexClass.ReferencedBy.class)
+                        children: $scope.getChildrenFromObject(apexClass.ReferencedBy.classes)
                     });
                 }
 
@@ -68,7 +77,7 @@ codeResultsApp.controller("CodeResultsController", function($scope, $http, $q) {
 
                     childrenForClass.push({
                         name: 'Methods',
-                        children: $scope.getChildrenFromObject(apexClass.ReferencedBy.methods)
+                        children: $scope.getChildrenAndChildrenFromObject(apexClass.ReferencedBy.methods)
                     });
                 }
 
@@ -76,13 +85,22 @@ codeResultsApp.controller("CodeResultsController", function($scope, $http, $q) {
 
                     childrenForClass.push({
                         name: 'Variables',
-                        children: $scope.getChildrenFromObject(apexClass.ReferencedBy.variables)
+                        children: $scope.getChildrenAndChildrenFromObject(apexClass.ReferencedBy.variables)
+                    });
+                }
+
+                if (apexClass.ReferencedBy.properties && Object.keys(apexClass.ReferencedBy.properties).length > 0) {
+
+                    childrenForClass.push({
+                        name: 'Properties',
+                        children: $scope.getChildrenFromObject(apexClass.ReferencedBy.properties)
                     });
                 }
 
                 class_object.children = childrenForClass;
 
                 $scope.root.children.push(class_object);
+
             });
 
             //$scope.classes = response.data;
@@ -170,6 +188,48 @@ codeResultsApp.controller("CodeResultsController", function($scope, $http, $q) {
             for (var i = 0; i < childLinesForProperty.length; i++) {
 
                 children_for_object.push({name: childLinesForProperty[i]});
+            }
+
+            children.push({
+                name: name,
+                children: children_for_object
+            });
+        }
+        return children;
+    };
+
+    $scope.getChildrenAndChildrenFromObject = function(childRows) {
+
+        let children = [];
+
+        // First iteration is the method or property name
+        for (var name in childRows) {
+
+            let children_for_object = [];
+
+            // Now loop through the class and vf names
+            for (var classOrVfNAme in childRows[name]) {
+
+                // If there are no children, we just display this row iwth no children
+                if (childRows[name][classOrVfNAme].length == 0) {
+
+                    children_for_object.push({name: classOrVfNAme});
+                }
+                // Else this child has more children
+                else {
+
+                    let children_for_children = [];
+
+                    for (var i = 0; i < childRows[name][classOrVfNAme].length; i++) {
+
+                        children_for_children.push({name: childRows[name][classOrVfNAme][i]});
+                    }
+
+                    children_for_object.push({
+                        name: classOrVfNAme,
+                        children: children_for_children
+                    });
+                }
             }
 
             children.push({
