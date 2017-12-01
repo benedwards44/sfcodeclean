@@ -368,6 +368,8 @@ class ScanJob(object):
                             # Now process the variables
                             for variable in external_reference.get('variables', []):
 
+                                print variable
+
                                 variable_references = {}
                                 
                                 # Need to determine if a key for the method already exists
@@ -380,6 +382,10 @@ class ScanJob(object):
 
                                 for line in variable.get('references', []):
                                     lines.append(self.get_line_description(line))
+
+                                variable_references[apex_class.name] = lines
+
+                                print variable_references
 
                                 # Add back to the object map
                                 reference_object['variables'][variable.get('name')] = variable_references
