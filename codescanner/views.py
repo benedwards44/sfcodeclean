@@ -208,7 +208,7 @@ class JobJsonView(View):
                 'IsReferenced': apex_class.is_referenced_externally,
                 'SymbolTable': json.loads(apex_class.symbol_table_json) if apex_class.symbol_table_json else None,
                 'ReferencedBy': json.loads(apex_class.referenced_by_json) if apex_class.referenced_by_json else None,
-            }) 
+            })
 
         return JsonResponse(
             {
