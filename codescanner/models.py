@@ -17,7 +17,7 @@ class Job(models.Model):
     finished_date = models.DateTimeField(blank=True, null=True)
 
     org_id = models.CharField(max_length=18)
-    username = models.CharField(max_length=80, blank=True, null=True)
+    username = models.CharField(max_length=120, blank=True, null=True)
 
     email = models.EmailField(blank=True, null=True)
     email_result = models.BooleanField(default=True)
@@ -61,7 +61,7 @@ class ApexClass(models.Model):
 
     class_id = models.CharField(max_length=18)
     class_member_id = models.CharField(max_length=18, blank=True, null=True)
-    name = models.CharField(max_length=80)
+    name = models.CharField(max_length=120)
     body = models.TextField()
 
     symbol_table_json = models.TextField(blank=True, null=True)
@@ -86,8 +86,8 @@ class ApexPageComponent(models.Model):
     job = models.ForeignKey(Job)
 
     sf_id = models.CharField(max_length=18)
-    name = models.CharField(max_length=80)
-    controller = models.CharField(max_length=80, blank=True, null=True)
+    name = models.CharField(max_length=120)
+    controller = models.CharField(max_length=120, blank=True, null=True)
     body = models.TextField()
 
     TYPE_CHOICES = (
